@@ -1,7 +1,4 @@
-import {
-  Context as LambdaContext,
-  Handler as LambdaHandler
-} from 'aws-lambda'
+import { Context as LambdaContext, Handler as LambdaHandler } from 'aws-lambda'
 
 declare type PluginHook = () => void
 declare type PluginHookWithMiddlewareName = (middlewareName: string) => void
@@ -75,7 +72,7 @@ type MiddyInputHandler<
 > = (
   event: TEvent,
   context: TContext,
-  opts: MiddyHandlerObject,
+  opts: MiddyHandlerObject
 ) => // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
 void | Promise<TResult> | TResult
 type MiddyInputPromiseHandler<
@@ -91,18 +88,25 @@ export interface MiddyfiedHandler<
   TContext extends LambdaContext = LambdaContext,
   TInternal extends Record<string, unknown> = {}
 > extends MiddyInputHandler<TEvent, TResult, TContext>,
-  MiddyInputPromiseHandler<TEvent, TResult, TContext> {
+    MiddyInputPromiseHandler<TEvent, TResult, TContext> {
   use: UseFn<TEvent, TResult, TErr, TContext, TInternal>
   before: AttachMiddlewareFn<TEvent, TResult, TErr, TContext, TInternal>
   after: AttachMiddlewareFn<TEvent, TResult, TErr, TContext, TInternal>
   onError: AttachMiddlewareFn<TEvent, TResult, TErr, TContext, TInternal>
   handler: <TInputHandlerEventProps, TInputHandlerResultProps>(
-    handler: MiddlewareHandler<
-    LambdaHandler<TInputHandlerEventProps, TInputHandlerResultProps>,
-    TContext
-    >
-    | LambdaHandler<TInputHandlerEventProps, TInputHandlerResultProps>
-  ) => MiddyfiedHandler<TInputHandlerEventProps, TInputHandlerResultProps, TErr, TContext, TInternal>
+    handler:
+      | MiddlewareHandler<
+          LambdaHandler<TInputHandlerEventProps, TInputHandlerResultProps>,
+          TContext
+        >
+      | LambdaHandler<TInputHandlerEventProps, TInputHandlerResultProps>
+  ) => MiddyfiedHandler<
+    TInputHandlerEventProps,
+    TInputHandlerResultProps,
+    TErr,
+    TContext,
+    TInternal
+  >
 }
 
 declare type AttachMiddlewareFn<
@@ -134,27 +138,28 @@ declare type UseFn<
 > = <TMiddleware extends MiddlewareObj<any, any, Error, any, any>>(
   middlewares: TMiddleware | TMiddleware[]
 ) => TMiddleware extends MiddlewareObj<
-infer TMiddlewareEvent,
-any,
-Error,
-infer TMiddlewareContext,
-infer TMiddlewareInternal
+  infer TMiddlewareEvent,
+  any,
+  Error,
+  infer TMiddlewareContext,
+  infer TMiddlewareInternal
 >
   ? MiddyfiedHandler<
-  TMiddlewareEvent & TEvent,
-  TResult,
-  TErr,
-  TMiddlewareContext & TContext,
-  TMiddlewareInternal & TInternal
-  > // always true
+      TMiddlewareEvent & TEvent,
+      TResult,
+      TErr,
+      TMiddlewareContext & TContext,
+      TMiddlewareInternal & TInternal
+    > // always true
   : never
 
 declare type MiddlewareHandler<
   THandler extends LambdaHandler<any, any>,
   TContext extends LambdaContext = LambdaContext
-> = THandler extends LambdaHandler<infer TEvent, infer TResult> // always true
-  ? MiddyInputHandler<TEvent, TResult, TContext>
-  : never
+> =
+  THandler extends LambdaHandler<infer TEvent, infer TResult> // always true
+    ? MiddyInputHandler<TEvent, TResult, TContext>
+    : never
 
 /**
  * Middy factory function. Use it to wrap your existing handler to enable middlewares on it.
@@ -167,11 +172,11 @@ declare function middy<
   TErr = Error,
   TContext extends LambdaContext = LambdaContext,
   TInternal extends Record<string, unknown> = {}
-> (
+>(
   handler?:
-  | LambdaHandler<TEvent, TResult>
-  | MiddlewareHandler<LambdaHandler<TEvent, TResult>, TContext>
-  | PluginObject,
+    | LambdaHandler<TEvent, TResult>
+    | MiddlewareHandler<LambdaHandler<TEvent, TResult>, TContext>
+    | PluginObject,
   plugin?: PluginObject
 ): MiddyfiedHandler<TEvent, TResult, TErr, TContext, TInternal>
 
