@@ -22,36 +22,76 @@ interface PluginObject {
 
 export interface Request<
   TEvent = any,
-  TResult = any,
+  TBaseResult = any,
   TErr = Error,
   TContext extends LambdaContext = LambdaContext,
+  TTransformedEvent = TEvent,
+  TTransformedResult = TBaseResult,
   TInternal extends Record<string, unknown> = {}
 > {
-  event: TEvent
+  event: TEvent & TTransformedEvent
   context: TContext
-  response: TResult | null
+  response: (TBaseResult & TTransformedResult) | null
   error: TErr | null
   internal: TInternal
 }
 
 declare type MiddlewareFn<
   TEvent = any,
-  TResult = any,
+  TBaseResult = any,
   TErr = Error,
   TContext extends LambdaContext = LambdaContext,
+  TTransformedEvent = TEvent,
+  TTransformedResult = TBaseResult,
   TInternal extends Record<string, unknown> = {}
-> = (request: Request<TEvent, TResult, TErr, TContext, TInternal>) => any
+> = (
+  request: Request<
+    TEvent,
+    TBaseResult,
+    TErr,
+    TContext,
+    TTransformedEvent,
+    TTransformedResult,
+    TInternal
+  >
+) => any
 
 export interface MiddlewareObj<
   TEvent = unknown,
-  TResult = any,
+  TBaseResult = any,
   TErr = Error,
   TContext extends LambdaContext = LambdaContext,
+  TTransformedEvent = TEvent,
+  TTransformedResult = TBaseResult,
   TInternal extends Record<string, unknown> = {}
 > {
-  before?: MiddlewareFn<TEvent, TResult, TErr, TContext, TInternal>
-  after?: MiddlewareFn<TEvent, TResult, TErr, TContext, TInternal>
-  onError?: MiddlewareFn<TEvent, TResult, TErr, TContext, TInternal>
+  before?: MiddlewareFn<
+    TEvent,
+    TBaseResult,
+    TErr,
+    TContext,
+    TTransformedEvent,
+    TTransformedResult,
+    Internal
+  >
+  after?: MiddlewareFn<
+    TEvent,
+    TBaseResult,
+    TErr,
+    TContext,
+    TTransformedEvent,
+    TTransformedResult,
+    TInternal
+  >
+  onError?: MiddlewareFn<
+    TEvent,
+    TBaseResult,
+    TErr,
+    TContext,
+    TTransformedEvent,
+    TTransformedResult,
+    TInternal
+  >
   name?: string
 }
 
@@ -93,20 +133,14 @@ export interface MiddyfiedHandler<
   before: AttachMiddlewareFn<TEvent, TResult, TErr, TContext, TInternal>
   after: AttachMiddlewareFn<TEvent, TResult, TErr, TContext, TInternal>
   onError: AttachMiddlewareFn<TEvent, TResult, TErr, TContext, TInternal>
-  handler: <TInputHandlerEventProps, TInputHandlerResultProps>(
+  handler: <THandlerEvent, THandlerResult>(
     handler:
       | MiddlewareHandler<
-          LambdaHandler<TInputHandlerEventProps, TInputHandlerResultProps>,
+          LambdaHandler<THandlerEvent, THandlerResult>,
           TContext
         >
-      | LambdaHandler<TInputHandlerEventProps, TInputHandlerResultProps>
-  ) => MiddyfiedHandler<
-    TInputHandlerEventProps,
-    TInputHandlerResultProps,
-    TErr,
-    TContext,
-    TInternal
-  >
+      | LambdaHandler<THandlerEvent, THandlerResult>
+  ) => MiddyfiedHandler<THandlerEvent, TResult, TErr, TContext, TInternal>
 }
 
 declare type AttachMiddlewareFn<
@@ -135,21 +169,23 @@ declare type UseFn<
   TErr = Error,
   TContext extends LambdaContext = LambdaContext,
   TInternal extends Record<string, unknown> = {}
-> = <TMiddleware extends MiddlewareObj<any, any, Error, any, any>>(
+> = <TMiddleware extends MiddlewareObj<any, any, Error, any, any, any, any>>(
   middlewares: TMiddleware | TMiddleware[]
 ) => TMiddleware extends MiddlewareObj<
-  infer TMiddlewareEvent,
   any,
-  Error,
-  infer TMiddlewareContext,
-  infer TMiddlewareInternal
+  any,
+  infer MErr,
+  infer MContext,
+  infer MTransformedEvent,
+  infer MTransformedResult,
+  infer MInternal
 >
   ? MiddyfiedHandler<
-      TMiddlewareEvent & TEvent,
-      TResult,
-      TErr,
-      TMiddlewareContext & TContext,
-      TMiddlewareInternal & TInternal
+      TEvent & MTransformedEvent,
+      TResult & MTransformedResult,
+      TErr | MErr,
+      TContext & MContext,
+      TInternal & MInternal
     > // always true
   : never
 
